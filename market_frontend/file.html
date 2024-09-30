@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Produits</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        nav a:hover {
+            background: #555;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .product {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .product:hover {
+            transform: scale(1.05);
+        }
+        .product img {
+            width: 100%;
+            height: auto;
+        }
+        .product-info {
+            padding: 15px;
+        }
+        .product-info h2 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+        }
+        .product-info p {
+            margin: 5px 0;
+        }
+        footer {
+            background: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1rem 0;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+        .form-container {
+            margin: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-container input, .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-container button {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Bienvenue sur notre site de produits</h1>
+    <nav>
+        <a href="#">Accueil</a>
+        <a href="#">Produits</a>
+        <a href="#">À propos</a>
+        <a href="#">Contact</a>
+    </nav>
+</header>
+
+<div class="form-container">
+    <h2>Ajouter ou Mettre à Jour un Produit</h2>
+    <input type="hidden" id="product-id">
+    <input type="text" id="product-name" placeholder="Nom du produit" required>
+    <input type="number" id="product-price" placeholder="Prix" required>
+    <textarea id="product-description" placeholder="Description" required></textarea>
+    <input type="file" id="product-photo" accept="image/*" required>
+    <button id="submit-button">Ajouter Produit</button>
+</div>
+
+<div class="container" id="product-list"></div>
+
+<footer>
+    <p>&copy; 2024 Votre Entreprise. Tous droits réservés.</p>
+</footer>
+
+<script>
+    const apiUrl = 'http://127.0.0.1:8000/api/product/';
+
+    // Fetch and display products
+    async function fetchProducts() {
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            displayProducts(data);
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+        }
+    }
+
+    function displayProducts(products) {
+        const productList = document.getElementById('product-list');
+        productList.innerHTML = '';
+        products.forEach(product => {
+            const productDiv = document.createElement('div');
+            productDiv.className = 'product';
+            productDiv.innerHTML = `
+                <img src="${product.photo}" alt="${product.name}">
+                <div class="product-info">
+                    <h2>${product.name}</h2>
+                    <p>Prix: $${product.price}</p>
+                    <p>${product.description}</p>
+                    <button onclick="editProduct(${product.id})">Modifier</button>
+                    <button onclick="deleteProduct(${product.id})">Supprimer</button>
+                </div>
+            `;
+            productList.appendChild(productDiv);
+        });
+    }
+
+    // Add or update product
+    async function addOrUpdateProduct() {
+        const id = document.getElementById('product-id').value;
+        const name = document.getElementById('product-name').value;
+        const price = document.getElementById('product-price').value;
+        const description = document.getElementById('product-description').value;
+        const photoInput = document.getElementById('product-photo');
+        
+        const productData = new FormData();
+        productData.append('name', name);
+        productData.append('price', price);
+        productData.append('description', description);
+        productData.append('active', true);
+        if (photoInput.files[0]) {
+            productData.append('photo', photoInput.files[0]);
+        }
+
+        try {
+            let response;
+            if (id) {
+                // Update existing product
+                response = await fetch(apiUrl + id + '/', {
+                    method: 'PATCH',
+                    body: productData
+                });
+            } else {
+                // Create new product
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: productData
+                });
+            }
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            fetchProducts(); // Refresh the product list
+            resetForm();
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+        }
+    }
+
+    // Edit product
+    function editProduct(id) {
+        const product = [...document.getElementById('product-list').children].find(p => 
+            p.querySelector('button').onclick.toString().includes(id)
+        );
+
+        const productInfo = product.querySelector('.product-info');
+        document.getElementById('product-id').value = id;
+        document.getElementById('product-name').value = productInfo.querySelector('h2').innerText;
+        document.getElementById('product-price').value = productInfo.querySelector('p').innerText.split('$')[1];
+        document.getElementById('product-description').value = productInfo.querySelector('p:nth-child(3)').innerText;
+        document.getElementById('product-photo').value = ''; // Reset file input
+
+        document.getElementById('submit-button').innerText = 'Mettre à Jour';
+    }
+
+    // Delete product
+    async function deleteProduct(id) {
+        try {
+            const response = await fetch(apiUrl + id + '/', {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            fetchProducts(); // Refresh the product list
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+        }
+    }
+
+    // Reset form
+    function resetForm() {
+        document.getElementById('product-id').value = '';
+        document.getElementById('product-name').value = '';
+        document.getElementById('product-price').value = '';
+        document.getElementById('product-description').value = '';
+        document.getElementById('product-photo').value = '';
+        document.getElementById('submit-button').innerText = 'Ajouter Produit';
+    }
+
+    document.getElementById('submit-button').onclick = addOrUpdateProduct;
+
+    window.onload = fetchProducts;
+</script>
+
+</body>
+</html>
