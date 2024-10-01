@@ -1,23 +1,24 @@
 from django.test import TestCase
-from customer.models import Customer
 
-class TestCustomer(TestCase):
-	
-	def user_create(self):
-		user=Customer.objects.create(
-			username='chalome',
-			email='chalome@gmail.com',
-			gender='Male',
-			phone='68894773',
-			country='Burundi',
-			photo="/home/chalome/Documents/icons/belle.jpg",
-			password1='bersha1999',
-			password2='bersha1999'
-			)
-		self.assertEqual(Customer.username, 'chalome')
-		self.assertEqual(Customer.email, 'chalome@gmail.com')
-		self.assertEqual(Customer.gender, 'Male')
-		self.assertEqual(Customer.phone, '68894773')
-		self.assertEqual(Customer.password1, 'bersha1999')
-		self.assertEqual(Customer.password2, 'bersha1999')
+from .models import Customer
 
+
+class CustomerModelTest(TestCase):
+    def setUp(self):
+        self.user = Customer.objects.create(
+            username="chalom",
+            email="chalom@gmail.com",
+            gender=Customer.Gender.MALE,
+            phone="68894773",
+            country="Burundi",
+            profile_photo="/home/magis/Documents/icons/belle.jpg",
+        )
+
+    def test_create_user(self):
+        self.assertEqual(self.user.username, "chalom")
+        self.assertEqual(self.user.email, "chalom@gmail.com")
+        self.assertEqual(self.user.gender, Customer.Gender.MALE)
+        self.assertEqual(self.user.phone, "68894773")
+        self.assertEqual(self.user.country, "Burundi")
+        self.assertEqual(self.user.profile_photo, "/home/magis/Documents/icons/belle.jpg")
+        self.assertIsNotNone(self.user.date_joined)
